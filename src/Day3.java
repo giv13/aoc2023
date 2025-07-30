@@ -34,37 +34,10 @@ public class Day3 {
         }
     }
 
-    public int getSumOfPartNumbers() {
-        int sum = 0;
-        Pattern patternNumber = Pattern.compile("\\d+");
-        Pattern patternSymbol = Pattern.compile("[^\\d.]+");
-        for (int i = 0; i < schematic.size(); i++) {
-            String row = schematic.get(i);
-            Matcher matcherNumber = patternNumber.matcher(row);
-            while (matcherNumber.find()) {
-                StringBuilder around = new StringBuilder();
-                int start = matcherNumber.start() == 0 ? 0 : matcherNumber.start() - 1;
-                int end = matcherNumber.end() == rowLength ? rowLength: matcherNumber.end() + 1;
-                if (i > 0) {
-                    around.append(schematic.get(i - 1), start, end);
-                }
-                around.append(schematic.get(i), start, end);
-                if (i < schematic.size() - 1) {
-                    around.append(schematic.get(i + 1), start, end);
-                }
-                Matcher matcherSymbol = patternSymbol.matcher(around);
-                if (matcherSymbol.find()) {
-                    sum += Integer.parseInt(matcherNumber.group());
-                }
-            }
-        }
-        return sum;
-    }
-
-    public int getSumOfGearRatios() {
-        Map<String, List<Integer>> gears = new HashMap<>();
-        Pattern patternNumber = Pattern.compile("\\d+");
-        Pattern patternSymbol = Pattern.compile("\\*");
+    private Map<String, List<Integer>> findAdjacentNumbers(String regexNumber, String regexSymbol) {
+        Map<String, List<Integer>> symbols = new HashMap<>();
+        Pattern patternNumber = Pattern.compile(regexNumber);
+        Pattern patternSymbol = Pattern.compile(regexSymbol);
         for (int i = 0; i < schematic.size(); i++) {
             Matcher matcherNumber = patternNumber.matcher(schematic.get(i));
             while (matcherNumber.find()) {
@@ -81,12 +54,21 @@ public class Day3 {
                 for (Map.Entry<Integer, String> a : around.entrySet()) {
                     Matcher matcherSymbol = patternSymbol.matcher(a.getValue());
                     while (matcherSymbol.find()) {
-                        List<Integer> gear = gears.computeIfAbsent(a.getKey() + ":" + (start + matcherSymbol.start()), g -> new ArrayList<>());
-                        gear.add(Integer.parseInt(matcherNumber.group()));
+                        List<Integer> symbol = symbols.computeIfAbsent(a.getKey() + ":" + (start + matcherSymbol.start()), g -> new ArrayList<>());
+                        symbol.add(Integer.parseInt(matcherNumber.group()));
                     }
                 }
             }
         }
-        return gears.values().stream().filter(numbers -> numbers.size() == 2).mapToInt(numbers -> numbers.getFirst() * numbers.getLast()).sum();
+        return symbols;
+    }
+
+
+    public int getSumOfPartNumbers() {
+        return findAdjacentNumbers("\\d+", "[^\\d.]+").values().stream().mapToInt(numbers -> numbers.stream().mapToInt(Integer::intValue).sum()).sum();
+    }
+
+    public int getSumOfGearRatios() {
+        return findAdjacentNumbers("\\d+", "\\*").values().stream().filter(numbers -> numbers.size() == 2).mapToInt(numbers -> numbers.getFirst() * numbers.getLast()).sum();
     }
 }
